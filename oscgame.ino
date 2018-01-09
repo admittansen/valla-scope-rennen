@@ -14,11 +14,18 @@
 #define MAX_SPEED 8
 #define SPEED_INC_TIME 20000
 
+#define CHANCE_BASE 10000
+#define START_CHANCE 40
+#define MAX_CHANCE 100
+#define CHANCE_INC_TIME 2500
+
+#define SIZE_SHIFT_TIME 5000
+
 #define NTREES 10
 
 #define TICK (1000 / 60)
 
-#define HOLDOFF 2000
+#define HOLDOFF 1500
 
 #define PLAYER_SPEED 8
 
@@ -54,6 +61,8 @@ unsigned long lastTick = 0;
 unsigned long startTime;
 unsigned long crashTime;
 unsigned long speedIncTime;
+unsigned long chanceIncTime;
+unsigned long sizeShiftTime;
 int speed = START_SPEED;
 
 int crashDecMin;
@@ -63,11 +72,11 @@ int crashSec;
 
 GameState gameState = title;
 
-long treeChance = 40; // Out of 10000
+long treeChance = START_CHANCE;
 
-int smallChance = 33;
-int mediumChance = 33;
-int largeChance = 33;
+int smallChance = 45;
+int mediumChance = 30;
+int largeChance = 25;
 
 int playerPos = 127;
 int playerSkew;
@@ -104,9 +113,11 @@ void update()
     {
       if (millis() > 2500)
       {
-        gameState = running;
+        gameState = holdoff;
         startTime = millis();
         speedIncTime = startTime;
+        chanceIncTime = startTime;
+        sizeShiftTime = startTime;
         randomSeed(analogRead(CONTROL_POT) ^ micros());
       }
       break;
@@ -141,6 +152,7 @@ void update()
 
       if (gameState == running)
       {
+        // Increase speed over time
         if (millis() - speedIncTime >= SPEED_INC_TIME)
         {
           speedIncTime = millis();
@@ -148,6 +160,29 @@ void update()
           if (speed < MAX_SPEED)
           {
             speed++;
+          }
+        }
+
+        // Increase probability of spawning trees over time
+        if (millis() - chanceIncTime >= CHANCE_INC_TIME)
+        {
+          chanceIncTime = millis();
+          
+          if (treeChance < MAX_CHANCE)
+          {
+            treeChance++;
+          }
+        }
+
+        // Shift probability of small trees to large trees over time
+        if (millis() - sizeShiftTime >= SIZE_SHIFT_TIME)
+        {
+          sizeShiftTime = millis();
+          
+          if (smallChance > 0)
+          {
+            smallChance--;
+            largeChance++;
           }
         }
         
@@ -161,7 +196,7 @@ void update()
             {
               gameState = crashed;
               crashTime = millis();
-
+              
               unsigned long time = (crashTime - startTime) / 1000;
               int minutes = time / 60;
               int seconds = time % 60;
@@ -180,7 +215,7 @@ void update()
           }
           else
           {
-            if (random(10000) < treeChance)
+            if (random(CHANCE_BASE) < treeChance)
             {
               trees[i].active = true;
   
@@ -650,7 +685,7 @@ void draw0(byte x1, byte y1)
 
 void draw1(byte x1, byte y1)
 {
-  int x = x1/4 - 4;
+  int x = x1/4 - 2;
   int y = 64 - (y1/4 + 14);
   
   l(0+x,2+y, 2+x,0+y);
@@ -708,7 +743,7 @@ void draw5(byte x1, byte y1)
   l(8+x,0+y, 0+x,0+y);
   l(0+x,0+y, 0+x,4+y);
   l(0+x,4+y, 1+x,5+y);
-  l(2+x,5+y, 6+x,5+y);
+  l(1+x,5+y, 6+x,5+y);
   l(6+x,5+y, 8+x,7+y);
   l(8+x,7+y, 8+x,12+y);
   l(8+x,12+y, 6+x,14+y);
