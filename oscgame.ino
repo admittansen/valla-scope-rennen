@@ -192,11 +192,11 @@ void update()
               {
                 trees[i].size = small;
               }
-              else if (size < mediumChance)
+              else if (size < smallChance + mediumChance)
               {
                 trees[i].size = medium;
               }
-              else if (size < largeChance)
+              else 
               {
                 trees[i].size = large;
               }
