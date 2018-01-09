@@ -1,7 +1,3 @@
-#define SMALL 2
-#define MEDIUM 3
-#define LARGE 4
-
 #define TREE_TRUNK 3
 #define TREE_WIDTH 5
 #define TREE_HEIGHT 13
@@ -29,16 +25,23 @@
 
 enum GameState {
   title,
+  holdoff,
   running,
   crashed,
   end
+};
+
+enum TreeSize {
+  small = 2,
+  medium = 3,
+  large = 4
 };
 
 typedef struct 
 {
    int x;
    int y;
-   byte size;
+   TreeSize size;
    bool active;
 } tree;
 
@@ -55,7 +58,11 @@ int crashSec;
 
 GameState gameState = title;
 
-long treeChance = 40;
+long treeChance = 40; // Out of 10000
+
+int smallChance = 33;
+int mediumChance = 33;
+int largeChance = 33;
 
 int playerPos = 127;
 int playerSkew;
@@ -98,6 +105,13 @@ void update()
       }
       break;
     }
+    case holdoff:
+    {
+      if (millis() - startTime > HOLDOFF)
+      {
+        gameState = running;
+      }
+    } // FALLTHROUGH
     case running:
     {
       int targetPos = PLAYER_WIDTH + ((255 - 2 * PLAYER_WIDTH) * (unsigned int)(analogRead(CONTROL_POT) >> 2)) / 255;
@@ -118,49 +132,63 @@ void update()
       {
         playerPos = targetPos;
       }
-      
-      for (int i = 0; i < NTREES; i++)
-      {
-        if (trees[i].active)
-        {
-          trees[i].y += speed;
-  
-  
-          if (trees[i].y + TREE_HEIGHT * trees[i].size >= PLAYER_LINE - PLAYER_HEIGHT)
-          {
-            if (checkPlayerTreeCollision(trees[i]))
-            {
-              gameState = crashed;
-              crashTime = millis();
 
-              unsigned long time = (crashTime - startTime) / 1000;
-              int minutes = time / 60;
-              int seconds = time % 60;
-              
-              crashDecMin = minutes / 10;
-              crashMin = minutes % 10;
-              crashDecSec = seconds / 10;
-              crashSec = seconds % 10;
-              return;
+      if (gameState == running)
+      {
+        for (int i = 0; i < NTREES; i++)
+        {
+          if (trees[i].active)
+          {
+            trees[i].y += speed;
+    
+            if (trees[i].y + TREE_HEIGHT * trees[i].size >= PLAYER_LINE - PLAYER_HEIGHT)
+            {
+              if (checkPlayerTreeCollision(trees[i]))
+              {
+                gameState = crashed;
+                crashTime = millis();
+  
+                unsigned long time = (crashTime - startTime) / 1000;
+                int minutes = time / 60;
+                int seconds = time % 60;
+                
+                crashDecMin = minutes / 10;
+                crashMin = minutes % 10;
+                crashDecSec = seconds / 10;
+                crashSec = seconds % 10;
+                return;
+              }
+            }
+      
+            if (trees[i].y > 255)
+            {
+              trees[i].active = false;
             }
           }
+          else
+          {
+            if (random(10000) < treeChance)
+            {
+              trees[i].active = true;
+  
+              int size = random(smallChance + mediumChance + largeChance);
+              if (size < smallChance)
+              {
+                trees[i].size = small;
+              }
+              else if (size < mediumChance)
+              {
+                trees[i].size = medium;
+              }
+              else if (size < largeChance)
+              {
+                trees[i].size = large;
+              }
     
-          if (trees[i].y > 255)
-          {
-            trees[i].active = false;
-          }
-        }
-        else if (millis() - startTime > HOLDOFF)
-        {
-          if (random(10000) < treeChance)
-          {
-            trees[i].active = true;
-  
-            trees[i].size = random(3) + 2;
-  
-            trees[i].y = -TREE_HEIGHT * trees[i].size;
-  
-            trees[i].x = random(TREE_WIDTH * trees[i].size, 255 - TREE_WIDTH * trees[i].size);
+              trees[i].y = -TREE_HEIGHT * trees[i].size;
+    
+              trees[i].x = random(TREE_WIDTH * trees[i].size, 255 - TREE_WIDTH * trees[i].size);
+            }
           }
         }
       }
@@ -172,6 +200,10 @@ void update()
       {
         gameState = end;
       }
+      break;
+    }
+    case end:
+    {
       break;
     }
   }
@@ -188,14 +220,16 @@ void draw()
       drawTitleScreen();
       break;
     }
+    case holdoff: // FALLTHROUGH
     case running:
     {
       // Player
       line(playerPos + playerSkew, PLAYER_LINE, playerPos - PLAYER_WIDTH, PLAYER_LINE + PLAYER_HEIGHT);
       line(playerPos + playerSkew, PLAYER_LINE, playerPos + PLAYER_WIDTH, PLAYER_LINE + PLAYER_HEIGHT);
       line(playerPos + playerSkew, PLAYER_LINE, playerPos + playerSkew*2, PLAYER_LINE - PLAYER_HEIGHT);
-    }
-    case crashed: // FALLTHROUGH
+      
+    } // FALLTHROUGH
+    case crashed:
     {
       if (gameState == crashed)
       {
