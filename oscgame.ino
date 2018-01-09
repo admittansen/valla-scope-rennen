@@ -28,11 +28,11 @@
 #define l(X1, Y1, X2, Y2) line((X1)*4, 255-(Y1)*4, (X2)*4, 255-(Y2)*4)
 
 enum GameState {
-  title,
-  holdoff,
-  running,
-  crashed,
-  end
+  title,    // Title screen
+  holdoff,  // Before trees start spawning
+  running,  // Game running
+  crashed,  // Crash animation showing
+  end       // End screen with time
 };
 
 enum TreeSize {
@@ -107,7 +107,7 @@ void update()
         gameState = running;
         startTime = millis();
         speedIncTime = startTime;
-        randomSeed(analogRead(CONTROL_POT));
+        randomSeed(analogRead(CONTROL_POT) ^ micros());
       }
       break;
     }
@@ -157,23 +157,20 @@ void update()
           {
             trees[i].y += speed;
     
-            if (trees[i].y + TREE_HEIGHT * trees[i].size >= PLAYER_LINE - PLAYER_HEIGHT)
+            if (checkPlayerTreeCollision(trees[i]))
             {
-              if (checkPlayerTreeCollision(trees[i]))
-              {
-                gameState = crashed;
-                crashTime = millis();
-  
-                unsigned long time = (crashTime - startTime) / 1000;
-                int minutes = time / 60;
-                int seconds = time % 60;
-                
-                crashDecMin = minutes / 10;
-                crashMin = minutes % 10;
-                crashDecSec = seconds / 10;
-                crashSec = seconds % 10;
-                return;
-              }
+              gameState = crashed;
+              crashTime = millis();
+
+              unsigned long time = (crashTime - startTime) / 1000;
+              int minutes = time / 60;
+              int seconds = time % 60;
+              
+              crashDecMin = minutes / 10;
+              crashMin = minutes % 10;
+              crashDecSec = seconds / 10;
+              crashSec = seconds % 10;
+              return;
             }
       
             if (trees[i].y > 255)
