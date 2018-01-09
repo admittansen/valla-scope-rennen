@@ -252,6 +252,7 @@ void draw()
         int length = (CRASH_SIZE * ((millis() - crashTime) % CRASH_ANIM_CYCLE)) / CRASH_ANIM_CYCLE;
         int diag = (length * 2) / 3;
 
+        // Crash animation
         line(playerPos, PLAYER_LINE, playerPos + length, PLAYER_LINE);
         line(playerPos, PLAYER_LINE, playerPos - length, PLAYER_LINE);
         line(playerPos, PLAYER_LINE, playerPos, PLAYER_LINE + length);
@@ -296,7 +297,7 @@ void drawTree(int x, int y, byte size)
   byte height = TREE_HEIGHT * size;
   byte width = TREE_WIDTH * size;
   
-  line(x, y - TREE_TRUNK*size, x, y);
+  line(x, y - TREE_TRUNK * size, x, y);
   line(x, y, x - width, y);
   line(x - width, y, x, y + height);
   line(x, y + height, x + width, y);
@@ -329,14 +330,14 @@ bool checkPlayerTreeCollision(tree t)
   ||
   pointInTriangle(
     playerPos + playerSkew, PLAYER_LINE,
-    t.x- TREE_WIDTH * t.size, t.y, 
-    t.x + TREE_WIDTH * t.size, t.y, 
+    t.x- width, t.y, 
+    t.x + width, t.y, 
     t.x, t.y + height)
   ||
   pointInTriangle(
     playerPos + playerSkew * 2, PLAYER_LINE - PLAYER_HEIGHT,
-    t.x- TREE_WIDTH * t.size, t.y, 
-    t.x + TREE_WIDTH * t.size, t.y, 
+    t.x- width, t.y, 
+    t.x + width, t.y, 
     t.x, t.y + height);
 }
 
@@ -361,22 +362,15 @@ void line(int x0, int y0, int x1, int y1) {     /// Bresenham's Line Algorithm
   int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
   int err = (dx>dy ? dx : -dy)/2, e2;
   
-  for(;;){
-    if (x0==x1 && y0==y1) break;
+  while (x0!=x1 || y0!=y1) {
     e2 = err;
     if (e2 >-dx) { 
       err -= dy;
-      //if (x0 != x1)
-      {
-        x0 += sx; 
-      }
+      x0 += sx;
     }    
     if (e2 < dy) { 
-      err += dx; 
-      //if (y0 != y1)
-      {
-        y0 += sy; 
-      }
+      err += dx;
+      y0 += sy;
     }
 
     plot(x0, y0);
@@ -601,15 +595,17 @@ void drawEndScreen()
 
 void drawTime()
 {  
+  // Minutes
   drawDigit(crashDecMin, 60, 20);
   drawDigit(crashMin, 100, 20);
 
+  // Separator dots
   line(126, 36, 126, 37);
-  line(126, 55, 126, 56);  
-  
+  line(126, 55, 126, 56);
+
+  // Seconds
   drawDigit(crashDecSec, 155, 20);
   drawDigit(crashSec, 195, 20);
-  
 }
 
 void drawDigit(byte digit, byte x1, byte y1)
