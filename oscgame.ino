@@ -351,9 +351,15 @@ bool pointInTriangle (int px, int py, int x1, int y1, int x2, int y2, int x3, in
 
     b1 = sign(px, py, x1, y1, x2, y2) < 0;
     b2 = sign(px, py, x2, y2, x3, y3) < 0;
+
+    if (b1 != b2)
+    {
+      return false;
+    }
+    
     b3 = sign(px, py, x3, y3, x1, y1) < 0;
 
-    return ((b1 == b2) && (b2 == b3));
+    return b2 == b3;
 }
 
 void line(int x0, int y0, int x1, int y1) {     /// Bresenham's Line Algorithm  
