@@ -10,6 +10,10 @@
 #define CRASH_ANIM_TIME 2000
 #define CRASH_SIZE 30
 
+#define START_SPEED 4
+#define MAX_SPEED 8
+#define SPEED_INC_TIME 20000
+
 #define NTREES 10
 
 #define TICK (1000 / 60)
@@ -49,7 +53,8 @@ tree trees[NTREES];
 unsigned long lastTick = 0;
 unsigned long startTime;
 unsigned long crashTime;
-int speed = 4;
+unsigned long speedIncTime;
+int speed = START_SPEED;
 
 int crashDecMin;
 int crashMin;
@@ -101,6 +106,7 @@ void update()
       {
         gameState = running;
         startTime = millis();
+        speedIncTime = startTime;
         randomSeed(analogRead(CONTROL_POT));
       }
       break;
@@ -135,6 +141,16 @@ void update()
 
       if (gameState == running)
       {
+        if (millis() - speedIncTime >= SPEED_INC_TIME)
+        {
+          speedIncTime = millis();
+          
+          if (speed < MAX_SPEED)
+          {
+            speed++;
+          }
+        }
+        
         for (int i = 0; i < NTREES; i++)
         {
           if (trees[i].active)
