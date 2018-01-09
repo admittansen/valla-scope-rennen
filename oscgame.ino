@@ -340,26 +340,18 @@ bool checkPlayerTreeCollision(tree t)
     t.x, t.y + height);
 }
 
-int sign (int x1, int y1, int x2, int y2, int x3, int y3)
-{
-    return (x1 - x3) * (y2 - y3) - (x2 - x3) * (y1 - y3);
-}
-
 bool pointInTriangle (int px, int py, int x1, int y1, int x2, int y2, int x3, int y3)
 {
-    bool b1, b2, b3;
+    int px1 = px-x1;
+    int py1 = py-y1;
 
-    b1 = sign(px, py, x1, y1, x2, y2) < 0;
-    b2 = sign(px, py, x2, y2, x3, y3) < 0;
+    bool p12 = (x2-x1)*py1-(y2-y1)*px1 > 0;
 
-    if (b1 != b2)
-    {
-      return false;
-    }
-    
-    b3 = sign(px, py, x3, y3, x1, y1) < 0;
+    if((x3-x1)*py1-(y3-y1)*px1 > 0 == p12) return false;
 
-    return b2 == b3;
+    if((x3-x2)*(py-y2)-(y3-y2)*(px-x2) > 0 != p12) return false;
+
+    return true;
 }
 
 void line(int x0, int y0, int x1, int y1) {     /// Bresenham's Line Algorithm  
