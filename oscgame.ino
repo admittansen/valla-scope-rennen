@@ -200,7 +200,7 @@ void update()
     } // FALLTHROUGH
     case running:
     {
-      int targetPos = PLAYER_WIDTH + ((255 - 2 * PLAYER_WIDTH) * (unsigned int)(analogRead(CONTROL_POT) >> 2)) / 255;
+      int targetPos = PLAYER_WIDTH + ((254 - 2 * PLAYER_WIDTH) * (unsigned int)(analogRead(CONTROL_POT) >> 2)) / 255;
       
       int playerErr = targetPos - playerPos;
       int dir = abs(playerErr) <= PLAYER_WIDTH ? playerErr : PLAYER_WIDTH * (playerErr < 0 ? -1 : 1);
