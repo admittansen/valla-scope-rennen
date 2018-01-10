@@ -25,7 +25,7 @@
 
 #define TICK (1000 / 60)
 
-#define LOVE_TIME 2000
+#define LOVE_TIME 20000
 #define HOLDOFF 1500
 
 #define PLAYER_SPEED 8
@@ -86,7 +86,11 @@ int largeChance = 25;
 int playerPos = 127;
 int playerSkew;
 
+int starburst[127];
+
 void setup() {
+  starburstInit();
+  
   // put your setup code here, to run once:
   DDRC = 0b00111111;
   DDRB = 0b00111111;
@@ -278,6 +282,26 @@ void draw()
     case love:
     {
       drawLove();
+      drawStarburst('S', 10, 30, 12, 20);
+      drawStarburst('E', 25, 30, 12, 20);
+      drawStarburst('B', 40, 30, 12, 20);
+      drawStarburst('A', 55, 30, 12, 20);
+      drawStarburst('S', 70, 30, 12, 20);
+      drawStarburst('T', 85, 30, 12, 20);
+      drawStarburst('I', 100, 30, 12, 20);
+      drawStarburst('A', 115, 30, 12, 20);
+      drawStarburst('N', 130, 30, 12, 20);
+
+      drawStarburst('G', 10, 5, 12, 20);
+      drawStarburst('U', 25, 5, 12, 20);
+      drawStarburst('S', 40, 5, 12, 20);
+      drawStarburst('T', 55, 5, 12, 20);
+      drawStarburst('A', 70, 5, 12, 20);
+      drawStarburst('F', 85, 5, 12, 20);
+      drawStarburst('S', 100, 5, 12, 20);
+      drawStarburst('S', 115, 5, 12, 20);
+      drawStarburst('O', 130, 5, 12, 20);
+      drawStarburst('N', 145, 5, 12, 20);
       break;
     }
     case title:
@@ -988,5 +1012,88 @@ void drawLove()
   L(177+57,118+33, 175+57,116+33);
   L(175+57,116+33, 173+57,112+33);
   L(173+57,112+33, 173+57,108+33);
+}
+
+void drawStarburst(char c, byte x, byte y, byte width, byte height)
+{
+  // Draw characters as 14-segment display
+  
+  byte w = width >> 1; //width/2;
+  byte h = height >> 1; //height/2;
+  byte h2 = h << 1;
+  
+  int bcd = starburst[c];
+
+  if (bcd & 1) // a
+  {
+    line(x-w, y+h2, x+w, y+h2);
+  }
+  if (bcd & (1 << 1)) // b
+  {
+    line(x+w, y+h2, x+w, y+h);
+  }
+  if (bcd & (1 << 2)) // c
+  {
+    line(x+w, y+h, x+w, y);
+  }
+  if (bcd & (1 << 3)) // d
+  {
+    line(x+w, y, x-w, y);
+  }
+  if (bcd & (1 << 4)) // e
+  {
+    line(x-w, y, x-w, y+h);
+  }
+  if (bcd & (1 << 5)) // f
+  {
+    line(x-w, y+h, x-w, y+h2);
+  }
+  if (bcd & (1 << 6)) // g1
+  {
+    line(x-w, y+h, x, y+h);
+  }
+  if (bcd & (1 << 7)) // g2
+  {
+    line(x, y+h, x+w, y+h);
+  }
+  if (bcd & (1 << 8)) // h
+  {
+    line(x-w, y+h2, x, y+h);
+  }
+  if (bcd & (1 << 9)) // i
+  {
+    line(x, y+h2, x, y+h);
+  }
+  if (bcd & (1 << 10)) // j
+  {
+    line(x+w, y+h2, x, y+h);
+  }
+  if (bcd & (1 << 11)) // k
+  {
+    line(x+w, y, x, y+h);
+  }
+  if (bcd & (1 << 12)) // l
+  {
+    line(x, y, x, y+h);
+  }
+  if (bcd & (1 << 13)) // m
+  {
+    line(x-w, y, x, y+h);
+  }
+}
+
+void starburstInit()
+{
+  starburst['A'] = 0b00000011110111;
+  starburst['B'] = 0b01001010001111;
+  starburst['E'] = 0b00000011111001;
+  starburst['F'] = 0b00000011110001;
+  starburst['G'] = 0b00000010111101;
+  starburst['I'] = 0b01001000001001;
+  starburst['N'] = 0b00100100110110;
+  starburst['O'] = 0b00000000111111;
+  starburst['S'] = 0b00000110001101;
+  starburst['U'] = 0b00000000111110;
+  starburst['T'] = 0b01001000000001;
 }
 
