@@ -716,8 +716,8 @@ void drawTime()
   drawDigit(crashMin, 100, 35);
 
   // Separator dots
-  line(126, 44, 126, 45);
-  line(126, 65, 126, 66);
+  line(126, 48, 126, 49);
+  line(126, 70, 126, 71);
 
   // Seconds
   drawDigit(crashDecSec, 155, 35);
@@ -1094,10 +1094,11 @@ void drawStarburst(char c, byte x, byte y, byte width, byte height)
 
   if (c == ':') // Cheat to make look good
   {
+    byte h2 = height >> 1; // height/2;
     byte h8 =  height >> 3; // height/8;
 
-    line(x, y+h8, x, y+h8*2);
-    line(x, y+h8*6, x, y+h8*7); 
+    line(x, y+h2-h8*2, x, y+h2-h8*3);
+    line(x, y+h2+h8*2, x, y+h2+h8*3); 
   }
   else
   {
