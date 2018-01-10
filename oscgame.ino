@@ -25,7 +25,7 @@
 
 #define TICK (1000 / 60)
 
-#define LOVE_TIME 20000
+#define LOVE_TIME 2000
 #define HOLDOFF 1500
 
 #define PLAYER_SPEED 8
