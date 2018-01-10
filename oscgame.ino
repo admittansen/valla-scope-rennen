@@ -101,7 +101,7 @@ int playerSkew;
 
 int starburst[127] = {};
 
-char highScoreString[] = "HIGH SCORE 00-00";
+char highScoreString[] = "HIGH SCORE 00:00";
 
 void setup() {
   //EEPROM.put(0, 0L); // Reset highscore
@@ -1091,68 +1091,78 @@ void drawStarburstString(char* s, byte x, byte y, byte cWidth, byte cHeight, byt
 void drawStarburst(char c, byte x, byte y, byte width, byte height)
 {
   // Draw characters as 14-segment display
-  
-  byte w = width >> 1; //width/2;
-  byte h = height >> 1; //height/2;
-  byte h2 = h << 1;
-  
-  int bcd = starburst[c];
 
-  if (bcd & 1) // a
+  if (c == ':') // Cheat to make look good
   {
-    line(x-w, y+h2, x+w, y+h2);
+    byte h8 =  height >> 3; // height/8;
+
+    line(x, y+h8, x, y+h8*2);
+    line(x, y+h8*6, x, y+h8*7); 
   }
-  if (bcd & (1 << 1)) // b
+  else
   {
-    line(x+w, y+h2, x+w, y+h);
-  }
-  if (bcd & (1 << 2)) // c
-  {
-    line(x+w, y+h, x+w, y);
-  }
-  if (bcd & (1 << 3)) // d
-  {
-    line(x+w, y, x-w, y);
-  }
-  if (bcd & (1 << 4)) // e
-  {
-    line(x-w, y, x-w, y+h);
-  }
-  if (bcd & (1 << 5)) // f
-  {
-    line(x-w, y+h, x-w, y+h2);
-  }
-  if (bcd & (1 << 6)) // g1
-  {
-    line(x-w, y+h, x, y+h);
-  }
-  if (bcd & (1 << 7)) // g2
-  {
-    line(x, y+h, x+w, y+h);
-  }
-  if (bcd & (1 << 8)) // h
-  {
-    line(x-w, y+h2, x, y+h);
-  }
-  if (bcd & (1 << 9)) // i
-  {
-    line(x, y+h2, x, y+h);
-  }
-  if (bcd & (1 << 10)) // j
-  {
-    line(x+w, y+h2, x, y+h);
-  }
-  if (bcd & (1 << 11)) // k
-  {
-    line(x+w, y, x, y+h);
-  }
-  if (bcd & (1 << 12)) // l
-  {
-    line(x, y, x, y+h);
-  }
-  if (bcd & (1 << 13)) // m
-  {
-    line(x-w, y, x, y+h);
+    byte w = width >> 1; //width/2;
+    byte h = height >> 1; //height/2;
+    byte h2 = h << 1;
+    
+    int bcd = starburst[c];
+  
+    if (bcd & 1) // a
+    {
+      line(x-w, y+h2, x+w, y+h2);
+    }
+    if (bcd & (1 << 1)) // b
+    {
+      line(x+w, y+h2, x+w, y+h);
+    }
+    if (bcd & (1 << 2)) // c
+    {
+      line(x+w, y+h, x+w, y);
+    }
+    if (bcd & (1 << 3)) // d
+    {
+      line(x+w, y, x-w, y);
+    }
+    if (bcd & (1 << 4)) // e
+    {
+      line(x-w, y, x-w, y+h);
+    }
+    if (bcd & (1 << 5)) // f
+    {
+      line(x-w, y+h, x-w, y+h2);
+    }
+    if (bcd & (1 << 6)) // g1
+    {
+      line(x-w, y+h, x, y+h);
+    }
+    if (bcd & (1 << 7)) // g2
+    {
+      line(x, y+h, x+w, y+h);
+    }
+    if (bcd & (1 << 8)) // h
+    {
+      line(x-w, y+h2, x, y+h);
+    }
+    if (bcd & (1 << 9)) // i
+    {
+      line(x, y+h2, x, y+h);
+    }
+    if (bcd & (1 << 10)) // j
+    {
+      line(x+w, y+h2, x, y+h);
+    }
+    if (bcd & (1 << 11)) // k
+    {
+      line(x+w, y, x, y+h);
+    }
+    if (bcd & (1 << 12)) // l
+    {
+      line(x, y, x, y+h);
+    }
+    if (bcd & (1 << 13)) // m
+    {
+      line(x-w, y, x, y+h);
+    }
   }
 }
 
