@@ -1,3 +1,5 @@
+#include <EEPROM.h>
+
 #define TREE_TRUNK 3
 #define TREE_WIDTH 5
 #define TREE_HEIGHT 13
@@ -18,6 +20,10 @@
 #define START_CHANCE 40
 #define MAX_CHANCE 100
 #define CHANCE_INC_TIME 2500
+
+#define SMALL_CHANCE 45
+#define MEDIUM_CHANCE 30
+#define LARGE_CHANCE 25
 
 #define SIZE_SHIFT_TIME 5000
 
@@ -68,40 +74,86 @@ unsigned long crashTime;
 unsigned long speedIncTime;
 unsigned long chanceIncTime;
 unsigned long sizeShiftTime;
-int speed = START_SPEED;
+unsigned long highScoreTime;
+int speed;
 
 int crashDecMin;
 int crashMin;
 int crashDecSec;
 int crashSec;
 
-GameState gameState = love;
+bool newHighScore = false;
+int highDecMin;
+int highMin;
+int highDecSec;
+int highSec;
 
-long treeChance = START_CHANCE;
+GameState gameState;
 
-int smallChance = 45;
-int mediumChance = 30;
-int largeChance = 25;
+long treeChance;
+
+int smallChance;
+int mediumChance;
+int largeChance;
 
 int playerPos = 127;
 int playerSkew;
 
-int starburst[127];
+int starburst[127] = {};
+
+char highScoreString[] = "HIGH SCORE 00-00";
 
 void setup() {
+  //EEPROM.put(0, 0L); // Reset highscore
+  
   starburstInit();
   
   // put your setup code here, to run once:
   DDRC = 0b00111111;
   DDRB = 0b00111111;
   DDRD = 0b11110010;
+
+  EEPROM.get(0, highScoreTime);
+
+  //Serial.begin(115200);
+
+  restart();
+  gameState = love;
+}
+
+void restart()
+{
+  gameState = title;
+
+  treeChance = START_CHANCE;
+  
+  smallChance = SMALL_CHANCE;
+  mediumChance = MEDIUM_CHANCE;
+  largeChance = LARGE_CHANCE;
+
+  speed = START_SPEED;
+
+  newHighScore = false;
   
   for (int i = 0; i < NTREES; i++)
   {
     trees[i].active = false;
   }
+  
+  unsigned long time = (highScoreTime) / 1000;
+  int minutes = time / 60;
+  int seconds = time % 60;
+  
+  highDecMin = minutes / 10;
+  highMin = minutes % 10;
+  highDecSec = seconds / 10;
+  highSec = seconds % 10;
 
-  //Serial.begin(115200);
+  byte len = sizeof(highScoreString) - 1;
+  highScoreString[len - 1] = highSec + '0';
+  highScoreString[len - 2] = highDecSec + '0';
+  highScoreString[len - 4] = highMin + '0';
+  highScoreString[len - 5] = highDecMin + '0';
 }
 
 void loop() {
@@ -128,7 +180,7 @@ void update()
     }
     case title:
     {
-      if (millis() > 4000)
+      if (millis() > LOVE_TIME + 2000) // TODO: change to button
       {
         gameState = holdoff;
         startTime = millis();
@@ -213,8 +265,16 @@ void update()
             {
               gameState = crashed;
               crashTime = millis();
+              unsigned long gameTime = crashTime - startTime;
               
-              unsigned long time = (crashTime - startTime) / 1000;
+              if (gameTime > highScoreTime)
+              {
+                newHighScore = true;
+                highScoreTime = gameTime;
+                EEPROM.put(0, highScoreTime);
+              }
+              
+              unsigned long time = (gameTime) / 1000;
               int minutes = time / 60;
               int seconds = time % 60;
               
@@ -282,26 +342,8 @@ void draw()
     case love:
     {
       drawLove();
-      drawStarburst('S', 10, 30, 12, 20);
-      drawStarburst('E', 25, 30, 12, 20);
-      drawStarburst('B', 40, 30, 12, 20);
-      drawStarburst('A', 55, 30, 12, 20);
-      drawStarburst('S', 70, 30, 12, 20);
-      drawStarburst('T', 85, 30, 12, 20);
-      drawStarburst('I', 100, 30, 12, 20);
-      drawStarburst('A', 115, 30, 12, 20);
-      drawStarburst('N', 130, 30, 12, 20);
-
-      drawStarburst('G', 10, 5, 12, 20);
-      drawStarburst('U', 25, 5, 12, 20);
-      drawStarburst('S', 40, 5, 12, 20);
-      drawStarburst('T', 55, 5, 12, 20);
-      drawStarburst('A', 70, 5, 12, 20);
-      drawStarburst('F', 85, 5, 12, 20);
-      drawStarburst('S', 100, 5, 12, 20);
-      drawStarburst('S', 115, 5, 12, 20);
-      drawStarburst('O', 130, 5, 12, 20);
-      drawStarburst('N', 145, 5, 12, 20);
+      drawStarburstString("SEBASTIAN", 127, 36, 14, 24, 4);
+      drawStarburstString("GUSTAFSSON", 127, 5, 14, 24, 4);
       break;
     }
     case title:
@@ -664,21 +706,34 @@ void drawEndScreen()
   l(53,34, 45,34);
 
   drawTime();
+  drawHighScore();
 }
 
 void drawTime()
 {  
   // Minutes
-  drawDigit(crashDecMin, 60, 20);
-  drawDigit(crashMin, 100, 20);
+  drawDigit(crashDecMin, 60, 35);
+  drawDigit(crashMin, 100, 35);
 
   // Separator dots
-  line(126, 36, 126, 37);
-  line(126, 55, 126, 56);
+  line(126, 44, 126, 45);
+  line(126, 65, 126, 66);
 
   // Seconds
-  drawDigit(crashDecSec, 155, 20);
-  drawDigit(crashSec, 195, 20);
+  drawDigit(crashDecSec, 155, 35);
+  drawDigit(crashSec, 195, 35);
+}
+
+void drawHighScore()
+{
+  if (newHighScore)
+  {
+    drawStarburstString("NEW HIGH SCORE", 127, 4, 12, 18, 3);
+  }
+  else
+  {
+    drawStarburstString(highScoreString, 127, 4, 12, 18, 3);
+  }
 }
 
 void drawDigit(byte digit, byte x1, byte y1)
@@ -1014,6 +1069,25 @@ void drawLove()
   L(173+57,112+33, 173+57,108+33);
 }
 
+void drawStarburstString(char* s, byte x, byte y, byte cWidth, byte cHeight, byte spacing)
+{
+  byte len = strlen(s);
+
+  byte width = (len - 1) * (cWidth + spacing);
+  byte start = x - (width >> 1); //width / 2;
+
+  int i = 0;
+  while (*s != NULL)
+  {
+    if (*s != ' ')
+    {
+      drawStarburst(*s, start + i * (cWidth + spacing), y, cWidth, cHeight);
+    }
+    s++;
+    i++;
+  }
+}
+
 void drawStarburst(char c, byte x, byte y, byte width, byte height)
 {
   // Draw characters as 14-segment display
@@ -1083,17 +1157,45 @@ void drawStarburst(char c, byte x, byte y, byte width, byte height)
 }
 
 void starburstInit()
-{
+{  
+  starburst['0'] = 0b00000000111111;
+  starburst['1'] = 0b00010000000110;
+  starburst['2'] = 0b00000011011011;
+  starburst['3'] = 0b00000010001111;
+  starburst['4'] = 0b00000011100110;
+  starburst['5'] = 0b00000011101101;
+  starburst['6'] = 0b00000011111101;
+  starburst['7'] = 0b01010000000001;
+  starburst['8'] = 0b00000011111111;
+  starburst['9'] = 0b00000011100111;
+  
+  starburst[':'] = 0b01001000000000;
+  starburst['-'] = 0b00000011000000;
+  
   starburst['A'] = 0b00000011110111;
   starburst['B'] = 0b01001010001111;
+  starburst['C'] = 0b00000000111001;
+  starburst['D'] = 0b01001000001111;
   starburst['E'] = 0b00000011111001;
   starburst['F'] = 0b00000011110001;
   starburst['G'] = 0b00000010111101;
+  starburst['H'] = 0b00000011110110;
   starburst['I'] = 0b01001000001001;
+  starburst['J'] = 0b00000000011110;
+  starburst['K'] = 0b00110001110000;
+  starburst['L'] = 0b00000000111000;
+  starburst['M'] = 0b00010100110110;
   starburst['N'] = 0b00100100110110;
   starburst['O'] = 0b00000000111111;
+  starburst['P'] = 0b00000011110011;
+  starburst['Q'] = 0b00100000111111;
+  starburst['R'] = 0b00100011110011;
   starburst['S'] = 0b00000110001101;
-  starburst['U'] = 0b00000000111110;
   starburst['T'] = 0b01001000000001;
+  starburst['U'] = 0b00000000111110;
+  starburst['V'] = 0b10010000110000;
+  starburst['W'] = 0b10100000110110;
+  starburst['X'] = 0b10110100000000;
+  starburst['Y'] = 0b01010100000000;
+  starburst['Z'] = 0b10010000001001;
 }
-
