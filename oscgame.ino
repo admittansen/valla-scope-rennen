@@ -21,10 +21,10 @@
 #define MAX_CHANCE 100
 #define CHANCE_INC_TIME 2500
 
-#define SMALL_CHANCE 45
+#define SMALL_CHANCE 55
 #define MEDIUM_CHANCE 30
-#define LARGE_CHANCE 25
-
+#define LARGE_CHANCE 15
+#define MEGA_CHANCE 1
 #define SIZE_SHIFT_TIME 5000
 
 #define NTREES 10
@@ -36,7 +36,15 @@
 
 #define PLAYER_SPEED 8
 
-#define CONTROL_POT A7
+#define BOARD_POT A7
+#define CONTROL_POT A6
+
+#define USE_EXTERNAL_CONTROLLER !(PIND & (1 << 0))
+
+#define BUTTON_DEBOUNCE 100
+
+#define START_BUTTON_PRESSED !(PIND & (1 << 1))
+#define RESET_BUTTON_PRESSED !(PIND & (1 << 3))
 
 // Use 64x64 grid with inverted y-axis for text
 #define l(X1, Y1, X2, Y2) line((X1)*4, 255-(Y1)*4, (X2)*4, 255-(Y2)*4)
@@ -56,7 +64,8 @@ enum GameState {
 enum TreeSize {
   small = 2,
   medium = 3,
-  large = 4
+  large = 4,
+  mega = 5
 };
 
 typedef struct 
@@ -69,6 +78,7 @@ typedef struct
 
 tree trees[NTREES];
 unsigned long lastTick = 0;
+unsigned long loveTime;
 unsigned long startTime;
 unsigned long crashTime;
 unsigned long speedIncTime;
@@ -95,41 +105,70 @@ long treeChance;
 int smallChance;
 int mediumChance;
 int largeChance;
+int megaChance;
 
 int playerPos = 127;
 int playerSkew;
 
 int starburst[127] = {};
 
+bool buttonState = false;
+unsigned long buttonTime = -BUTTON_DEBOUNCE;
+
 char highScoreString[] = "HIGH SCORE 00:00";
 
-void setup() {
-  //EEPROM.put(0, 0L); // Reset highscore
-  
+bool debouncedButtonPressed()
+{
+  if (START_BUTTON_PRESSED != buttonState && millis() - buttonTime >= BUTTON_DEBOUNCE)
+  {
+    buttonTime = millis();
+    buttonState = !buttonState;
+    if (buttonState)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+void setup() {  
   starburstInit();
   
   // put your setup code here, to run once:
   DDRC = 0b00111111;
   DDRB = 0b00111111;
-  DDRD = 0b11110010;
+  DDRD = 0b11110000;
 
+  // Pullups on all inputs
+  PORTC = 0b11000000;
+  PORTB = 0b11000000;
+  PORTD = 0b00001111;
+
+  // Let pullup go high before checking button
+  delay(100);  
+  if (RESET_BUTTON_PRESSED)
+  {
+    EEPROM.put(0, 0L); // Reset highscore
+  }
+  
   EEPROM.get(0, highScoreTime);
 
-  //Serial.begin(115200);
+  //Serial.begin(115200); // CANNOT USE SERIAL!
 
   restart();
-  gameState = love;
 }
 
 void restart()
 {
-  gameState = title;
+  gameState = love;
+  loveTime = millis();
 
   treeChance = START_CHANCE;
   
   smallChance = SMALL_CHANCE;
   mediumChance = MEDIUM_CHANCE;
   largeChance = LARGE_CHANCE;
+  megaChance = MEGA_CHANCE;
 
   speed = START_SPEED;
 
@@ -172,7 +211,7 @@ void update()
   {
     case love:
     {
-      if (millis() > LOVE_TIME)
+      if (millis() - loveTime > LOVE_TIME || debouncedButtonPressed())
       {
         gameState = title;
       }
@@ -180,14 +219,14 @@ void update()
     }
     case title:
     {
-      if (millis() > LOVE_TIME + 2000) // TODO: change to button
+      if (debouncedButtonPressed())
       {
         gameState = holdoff;
         startTime = millis();
         speedIncTime = startTime;
         chanceIncTime = startTime;
         sizeShiftTime = startTime;
-        randomSeed(analogRead(CONTROL_POT) ^ micros());
+        randomSeed(analogRead(BOARD_POT) ^ analogRead(CONTROL_POT) ^ micros());
       }
       break;
     }
@@ -200,7 +239,9 @@ void update()
     } // FALLTHROUGH
     case running:
     {
-      int targetPos = PLAYER_WIDTH + ((254 - 2 * PLAYER_WIDTH) * (unsigned int)(analogRead(CONTROL_POT) >> 2)) / 255;
+      int pot = USE_EXTERNAL_CONTROLLER ? CONTROL_POT : BOARD_POT;
+      
+      int targetPos = PLAYER_WIDTH + ((254 - 2 * PLAYER_WIDTH) * (unsigned int)(analogRead(pot) >> 2)) / 255;
       
       int playerErr = targetPos - playerPos;
       int dir = abs(playerErr) <= PLAYER_WIDTH ? playerErr : PLAYER_WIDTH * (playerErr < 0 ? -1 : 1);
@@ -296,7 +337,7 @@ void update()
             {
               trees[i].active = true;
   
-              int size = random(smallChance + mediumChance + largeChance);
+              int size = random(smallChance + mediumChance + largeChance + megaChance);
               if (size < smallChance)
               {
                 trees[i].size = small;
@@ -305,9 +346,13 @@ void update()
               {
                 trees[i].size = medium;
               }
-              else 
+              else if (size < smallChance + mediumChance + largeChance)
               {
                 trees[i].size = large;
+              }
+              else
+              {
+                trees[i].size = mega;
               }
     
               trees[i].y = -TREE_HEIGHT * trees[i].size;
@@ -329,6 +374,10 @@ void update()
     }
     case end:
     {
+      if (debouncedButtonPressed())
+      {
+        restart();
+      }
       break;
     }
   }
@@ -503,9 +552,9 @@ void plot(int x, int y)
   if (y < 0) y = 0;
   else if (y > 255) y = 255;
   
-  PORTD = (lowByte(y) & 0b11000000) | ((0b11000000 & lowByte(x)) >> 2);
-  PORTC = lowByte(x);
-  PORTB = lowByte(y); 
+  PORTD = (lowByte(y) & 0b11000000) | ((0b11000000 & lowByte(x)) >> 2) | 0b00001111;
+  PORTC = lowByte(x) | 0b11000000;
+  PORTB = lowByte(y) | 0b11000000;
 }
 
 void drawTitleScreen()
@@ -635,6 +684,8 @@ void drawTitleScreen()
   l(52,55, 52,43);
   l(52,43, 60,51);
   l(60,43, 60,55);
+  
+  drawStarburstString("PRESS START", 127, 4, 12, 18, 3);
 }
 
 void drawEndScreen()
@@ -1076,15 +1127,14 @@ void drawStarburstString(char* s, byte x, byte y, byte cWidth, byte cHeight, byt
   byte width = (len - 1) * (cWidth + spacing);
   byte start = x - (width >> 1); //width / 2;
 
-  int i = 0;
   while (*s != NULL)
   {
     if (*s != ' ')
     {
-      drawStarburst(*s, start + i * (cWidth + spacing), y, cWidth, cHeight);
+      drawStarburst(*s, start, y, cWidth, cHeight);
     }
     s++;
-    i++;
+    start += (cWidth + spacing);
   }
 }
 
