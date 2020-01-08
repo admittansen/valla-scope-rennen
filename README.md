@@ -9,7 +9,7 @@ X kopplas till ingång A och Y kopplas till ingång B.
 
 ![Scope1](images/scope_1.jpg)
 
-![Scope2](images/scope_1.jpg)
+![Scope2](images/scope_2.jpg)
 
 ## Actual in-game footage
 
@@ -22,3 +22,7 @@ X kopplas till ingång A och Y kopplas till ingång B.
 ## Credits
 
 ![Valla Scope Rennen](images/screen_5.jpg)
+
+## License
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
